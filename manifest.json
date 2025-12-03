@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube字幕抽出くん with AI整形",
+  "version": "1.0.0",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "youtube-textify@noracraf.com",
+      "strict_min_version": "142.0",
+      "data_collection_permissions": {
+        "required": ["none"]
+      }
+    }
+  },
+  "description": "YouTubeの字幕を抽出してテキスト化します。ChatGPTと連携した整形機能付きです。",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "YT Transcript Extractor",
+    "default_popup": "popup/popup.html"
+  },
+  "permissions": ["activeTab", "tabs", "clipboardWrite", "scripting"],
+  "host_permissions": ["https://www.youtube.com/*", "https://chatgpt.com/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/watch*", "https://www.youtube.com/shorts/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://chatgpt.com/*"],
+      "js": ["chatgpt-inject.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
