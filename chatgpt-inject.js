@@ -2,6 +2,28 @@
 (() => {
   const api = globalThis.browser ?? globalThis.chrome;
   const TAG = "[YT-TX tidy-chatgpt]";
+  let pageLoaded = document.readyState === "complete";
+  window.addEventListener(
+    "load",
+    () => {
+      pageLoaded = true;
+    },
+    { once: true }
+  );
+  const waitForLoaded = (timeoutMs = 8000) =>
+    pageLoaded
+      ? Promise.resolve(true)
+      : new Promise((resolve) => {
+          const timer = setTimeout(() => resolve(false), timeoutMs);
+          window.addEventListener(
+            "load",
+            () => {
+              clearTimeout(timer);
+              resolve(true);
+            },
+            { once: true }
+          );
+        });
   const log = (...a) => {
     try {
       console.log(TAG, ...a);
@@ -16,16 +38,6 @@
 
   const trySend = () => {
     try {
-      const btn =
-        document.querySelector('button[data-testid="send-button"]') ||
-        document.querySelector('button[aria-label*="送信"]') ||
-        document.querySelector('button[aria-label*="Send"]');
-      if (btn) {
-        btn.click();
-        log("send button clicked");
-        return true;
-      }
-      // fallback: Enter key on focused element
       const active = document.activeElement || findInput();
       if (active) {
         const ev = new KeyboardEvent("keydown", {
@@ -108,8 +120,9 @@
   api.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (msg?.type === "YT_TX_INJECT_PROMPT") {
       log("message received", msg.prompt?.slice?.(0, 40) || "");
-      insertPromptWithRetry(msg.prompt).then((res) => {
+      insertPromptWithRetry(msg.prompt).then(async (res) => {
         if (res?.ok) {
+          await waitForLoaded();
           const sent = trySend();
           sendResponse({ ...res, sent });
         } else {

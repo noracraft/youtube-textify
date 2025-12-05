@@ -201,9 +201,12 @@ tidyBtn?.addEventListener("click", async () => {
     const result = await injectPromptToChatGPT(tab.id, prompt);
     if (result?.ok) {
       statusEl.textContent = "ChatGPTにプロンプトを挿入しました";
-      // 念のため、両ブラウザでアクティブ化を試みる（失敗しても致命的ではない）
+      // アクティブ化を試みる（Chromeではポップアップが閉じる場合があります）
       try {
         await tabsUpdate(tab.id, { active: true });
+        if (tab.windowId != null && api?.windows?.update) {
+          await api.windows.update(tab.windowId, { focused: true });
+        }
       } catch {
         // ignore
       }
