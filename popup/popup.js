@@ -139,7 +139,7 @@ const waitForTabComplete = (tabId, timeoutMs = 15000) =>
       if (finished) return;
       finished = true;
       clearTimeout(timer);
-      chrome.tabs.onUpdated.removeListener(listener);
+      api.tabs.onUpdated.removeListener(listener);
       resolve(tab);
     };
     const listener = (id, info, tab) => {

@@ -64,48 +64,40 @@
       return { ok: false, error: "input not found" };
     }
 
-    const tryDirectSet = () => {
-      try {
-        if (el.tagName === "TEXTAREA" || el.tagName === "INPUT") {
-          // テキストエリア系ではそのまま改行を含んだテキストとして代入
-          el.value = prompt;
-        } else {
-          // ProseMirror系の contenteditable には
-          // HTML文字列ではなく、テキスト＋<br> を素直に詰める
-          const root = el;
+    const text = String(prompt ?? "").replace(/\r\n?/g, "\n");
 
-          // 中身クリア
-          while (root.firstChild) {
-            root.removeChild(root.firstChild);
-          }
-
-          const lines = String(prompt).split(/\n/g);
-          lines.forEach((line, index) => {
-            if (index > 0) {
-              root.appendChild(document.createElement("br"));
-            }
-            root.appendChild(document.createTextNode(line));
-          });
-        }
-
-        // キャレットを末尾に移動＋入力イベント発火
-        const sel = window.getSelection();
-        const range = document.createRange();
-        range.selectNodeContents(el);
-        range.collapse(false);
-        sel.removeAllRanges();
-        sel.addRange(range);
+    try {
+      // textarea/input は従来通り
+      if (el.tagName === "TEXTAREA" || el.tagName === "INPUT") {
+        el.value = text;
         el.dispatchEvent(new InputEvent("input", { bubbles: true }));
-        log("direct set text");
-        return true;
-      } catch (e) {
-        log("direct set failed", e);
-        return false;
+        log("set textarea value");
+        return { ok: true };
       }
-    };
 
-    const ok = tryDirectSet();
-    return { ok };
+      // contenteditable (ProseMirror) は「ユーザー入力に近い」経路を優先
+      el.focus();
+
+      // 既存内容を全選択→削除
+      try {
+        document.execCommand("selectAll", false, null);
+        document.execCommand("delete", false, null);
+      } catch {}
+
+      // insertText を試す（改行保持の成功率が高い）
+      try {
+        const ok = document.execCommand("insertText", false, text);
+        if (ok) {
+          log("execCommand insertText ok");
+          return { ok: true };
+        }
+      } catch {
+        return { ok: false, error: "insert failed" };
+      }
+    } catch (e) {
+      log("direct set failed", e);
+      return { ok: false, error: (e && e.message) || String(e) };
+    }
   };
 
   const insertPromptWithRetry = async (prompt, retries = 10, interval = 500) => {

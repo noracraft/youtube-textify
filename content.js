@@ -7,6 +7,7 @@
     consoleChunkSize: 20000,
   };
   const TAG = "[YT-TX]";
+  const api = globalThis.browser ?? globalThis.chrome;
   const log = (...a) => console.log(TAG, ...a);
   const warn = (...a) => console.warn(TAG, ...a);
 
@@ -215,7 +216,7 @@
   }
 
   // ポップアップからの実行リクエストを受ける
-  chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+  api.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (msg?.type === "YT_TX_EXTRACT") {
       extractTranscript().then(sendResponse);
       return true; // async response

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "YouTube字幕抽出くん with AI整形",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "browser_specific_settings": {
     "gecko": {
       "id": "youtube-textify@noracraf.com",
