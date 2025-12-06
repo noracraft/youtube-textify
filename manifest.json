@@ -21,7 +21,7 @@
     "default_title": "YouTube字幕抽出くん with AI整形",
     "default_popup": "popup/popup.html"
   },
-  "permissions": ["tabs", "clipboardWrite"],
+  "permissions": ["tabs", "storage"],
   "host_permissions": ["https://www.youtube.com/*", "https://chatgpt.com/*"],
   "content_scripts": [
     {
@@ -34,5 +34,9 @@
       "js": ["chatgpt-inject.js"],
       "run_at": "document_idle"
     }
-  ]
+  ],
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": true
+  }
 }

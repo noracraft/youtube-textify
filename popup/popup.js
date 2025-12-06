@@ -9,6 +9,26 @@ const downloadBtn = $("#download");
 const copyBtn = $("#copy");
 const isFirefox = typeof navigator !== "undefined" && /firefox/i.test(navigator.userAgent);
 
+const DEFAULT_TEMPLATE = `以下に示すテキストは、YouTube動画の字幕を抽出したものです。
+句読点や改行が未整形で読みづらい状態のため、次のルールに準じた整形を行ってください。
+
+▼整形ルール
+
+1. 文の切れ目に「。」「、」などの句読点を補ってください。
+2. 話のまとまりごとに、3〜4文程度の段落に分けてください。
+3. 元の話し方の雰囲気はできるだけ残してください。
+4. 明らかな誤変換や誤字があれば、文脈から自然な表現に修正してください。
+5. 内容に変更は加えず、あくまで「読みやすく整形」することを優先してください。要約は極力行わないでください。
+
+▼出力フォーマット
+
+・整形済みの本文だけを出力してください。
+・箇条書きや解説は不要です。
+
+▼整形対象テキスト
+
+{{text}}`;
+
 const promisify =
   (fn) =>
   (...args) =>
@@ -27,6 +47,8 @@ const promisify =
       }
     });
 
+const storage = api.storage?.sync ?? api.storage?.local;
+const storageGet = promisify(storage.get.bind(storage));
 const tabsQuery = promisify(api.tabs.query.bind(api.tabs));
 const tabsCreate = promisify(api.tabs.create.bind(api.tabs));
 const tabsSendMessage = promisify(api.tabs.sendMessage.bind(api.tabs));
@@ -112,25 +134,11 @@ downloadBtn?.addEventListener("click", () => {
   statusEl.textContent = ".txt を保存しました";
 });
 
-const buildTidyPrompt = (text) => `以下に示すテキストは、YouTube動画の字幕を抽出したものです。
-句読点や改行が未整形で読みづらい状態のため、次のルールに準じた整形を行ってください。
-
-▼整形ルール
-
-1. 文の切れ目に「。」「、」などの句読点を補ってください。
-2. 話のまとまりごとに、3〜4文程度の段落に分けてください。
-3. 元の話し方の雰囲気はできるだけ残してください。
-4. 明らかな誤変換や誤字があれば、文脈から自然な表現に修正してください。
-5. 内容に変更は加えず、あくまで「読みやすく整形」することを優先してください。要約は極力行わないでください。
-
-▼出力フォーマット
-
-・整形済みの本文だけを出力してください。
-・箇条書きや解説は不要です。
-
-▼整形対象テキスト
-
-${text}`;
+const buildTidyPrompt = async (text) => {
+  const { promptTemplate } = await storageGet({ promptTemplate: DEFAULT_TEMPLATE });
+  const tpl = promptTemplate || DEFAULT_TEMPLATE;
+  return tpl.replace("{{text}}", text);
+};
 
 const waitForTabComplete = (tabId, timeoutMs = 15000) =>
   new Promise((resolve, reject) => {
@@ -180,7 +188,7 @@ tidyBtn?.addEventListener("click", async () => {
   const copied = await copyText(raw);
   statusEl.textContent = copied ? "字幕をコピーしました" : "コピーに失敗しました（続行）";
 
-  const prompt = buildTidyPrompt(raw);
+  const prompt = await buildTidyPrompt(raw);
   let tab;
   try {
     // Chromeではタブをアクティブにするとポップアップが閉じてしまうため、
